@@ -1,0 +1,19 @@
+identifier = ? str ?;
+
+fn = identifier | '(' ( '-' | '+' | '*' | '/' | '^' | fn ) ')';
+
+fn_call = fn ( '(' ( expr ',' )* [ expr ] ')' )+;
+
+value = ? literal ? | fn_call | identifier | '(' expr ')';
+
+unary = ( '-' | '+' )* value;
+
+exponentiation = unary ( '^' unary )*;
+
+multiplication = exponentiation ( '*' | '/' exponentiation )*;
+
+addition = multiplication ( '+' | '-' multiplication )*;
+
+pipe = addition ( '|' fn_call | fn )*;
+
+expr = pipe;

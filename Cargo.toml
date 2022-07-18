@@ -1,0 +1,10 @@
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[package]
+edition = "2021"
+name = "math-expresion-evaluator"
+version = "0.1.0"
+
+[dependencies]
+lazy_static = "1.4.0"
+regex = "1.6.0"
