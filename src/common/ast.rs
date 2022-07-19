@@ -10,7 +10,8 @@ pub enum ASTNode<'a> {
         calls: Vec<Vec<ASTNode<'a>>>,
     },
     Operation {
-        ingredients: Vec<ASTNode<'a>>,
-        operator: InfixOperator,
+        first: Box<ASTNode<'a>>,
+        // can not be empty
+        ingredients: Vec<(InfixOperator, ASTNode<'a>)>,
     },
 }

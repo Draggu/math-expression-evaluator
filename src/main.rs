@@ -5,16 +5,17 @@ mod evaluator;
 mod lexer;
 mod parser;
 
-fn main() -> Result<(), String> {
-    let tokens = lexer::tokenize("2*4/2".as_ref())?;
+pub fn calculate(input_str: &str) -> Result<f64, String> {
+    let tokens = lexer::tokenize(input_str)?;
 
     //TODO parsing erros
-    let ast = parser::parse(&tokens).ok_or("err")?;
-    println!("ast {:?}", ast);
+    let ast = parser::parse(&tokens).ok_or("parsing error")?;
 
-    let result = evaluator::evaluate(ast, &HashMap::new())?;
+    evaluator::evaluate(&ast, &HashMap::new())
+}
 
-    println!("{}", result);
+fn main() -> Result<(), String> {
+    println!("{}", calculate("23* 2 *2|(+) 1--2)".as_ref())?);
 
     Ok(())
 }

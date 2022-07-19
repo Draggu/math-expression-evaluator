@@ -4,42 +4,64 @@ use crate::common::{
     ast::ASTNode,
     eval::EvaluateResult,
     function::{Function, FunctionKind},
-    token::Associativity,
+    token::{Associativity, InfixOperator},
 };
+use std::iter;
 
-pub fn evaluate(ast: ASTNode, vars: &HashMap<&str, f64>) -> Result<f64, String> {
+pub fn evaluate(ast: &ASTNode, vars: &HashMap<&str, f64>) -> Result<f64, String> {
     match _evaluate(ast, vars)? {
         EvaluateResult::Fn { .. } => Err("cannot return function".to_string()),
         EvaluateResult::Val(result) => Ok(result),
     }
 }
 
-fn _evaluate(ast: ASTNode, vars: &HashMap<&str, f64>) -> Result<EvaluateResult, String> {
+fn _evaluate(ast: &ASTNode, vars: &HashMap<&str, f64>) -> Result<EvaluateResult, String> {
     match ast {
-        ASTNode::Literal(v) => Ok(EvaluateResult::Val(v)),
+        ASTNode::Literal(v) => Ok(EvaluateResult::Val(*v)),
         ASTNode::Var(var) => vars
             .get(var)
             .map(|v| EvaluateResult::Val(*v))
             .ok_or(format!("variable ( {} ) does not exists!", var)),
-        ASTNode::Operation {
-            ingredients,
-            operator,
-        } => {
-            let mut iter = ingredients.into_iter();
-            let first = iter.next().unwrap();
-            let fold = |prev, node| ASTNode::Call {
-                func: FunctionKind::FromOperator(operator),
-                calls: vec![vec![prev, node]],
-            };
+        ASTNode::Operation { ingredients, first } => {
+            let mut prev = _evaluate(first, vars)?;
 
-            _evaluate(
-                if operator.associativity() == Associativity::Right {
-                    iter.rfold(first, fold)
+            let mut it = ingredients.iter().peekable();
+
+            while let Some((next_op, ..)) = it.peek().cloned() {
+                let mut values = iter::from_fn(|| it.next_if(|(op, ..)| op == next_op))
+                    .map(|(op, node)| _evaluate(node, vars).map(|res| (op, res)))
+                    .collect::<Result<Vec<(&InfixOperator, EvaluateResult)>, String>>()?;
+
+                let call = |res: EvaluateResult,
+                            (op, node): (&InfixOperator, EvaluateResult)|
+                 -> Result<EvaluateResult, String> {
+                    Function::from_operator(&op)
+                        .call(&vec![res, node])
+                        .map(EvaluateResult::Val)
+                };
+
+                prev = if next_op.associativity() == Associativity::Right {
+                    let (mut last_op, last) = values.pop().unwrap();
+
+                    let values = values
+                        .into_iter()
+                        .rev()
+                        .map(|(op, value)| {
+                            let operator = last_op;
+                            last_op = op;
+                            (operator, value)
+                        })
+                        .collect::<Vec<(&InfixOperator, EvaluateResult)>>();
+
+                    iter::once((last_op, prev))
+                        .chain(values)
+                        .try_fold(last, call)?
                 } else {
-                    iter.fold(first, fold)
-                },
-                vars,
-            )
+                    values.into_iter().try_fold(prev, call)?
+                }
+            }
+
+            Ok(prev)
         }
         ASTNode::Call { func, calls } => {
             let func = match func {
@@ -48,21 +70,16 @@ fn _evaluate(ast: ASTNode, vars: &HashMap<&str, f64>) -> Result<EvaluateResult, 
                     .ok_or(format!("function ( {} ) does not exists!", ident))?,
             };
 
-            let args: Result<Vec<EvaluateResult>, String> = calls
+            let args = calls
                 .into_iter()
                 .flatten()
                 .map(|node| _evaluate(node, vars))
-                .collect();
+                .collect::<Result<Vec<EvaluateResult>, String>>()?;
 
-            match args {
-                Ok(args) => {
-                    if func.args_num() == args.len() as u8 {
-                        func.call(&args).map(|r| EvaluateResult::Val(r))
-                    } else {
-                        Ok(EvaluateResult::Fn { kind: func, args })
-                    }
-                }
-                Err(err) => Err(err),
+            if func.args_num() == args.len() as u8 {
+                func.call(&args).map(EvaluateResult::Val)
+            } else {
+                Ok(EvaluateResult::Fn { func, args })
             }
         }
     }

@@ -32,8 +32,8 @@ pub fn unary<'a>(tokens: &'a Vec<Token>, offset: usize) -> Option<NodeMatch<'a>>
             v.ast
         } else {
             ASTNode::Operation {
-                ingredients: vec![v.ast, ASTNode::Literal(-1.0)],
-                operator: InfixOperator::Multiplication,
+                first: Box::new(v.ast),
+                ingredients: vec![(InfixOperator::Multiplication, ASTNode::Literal(-1.0))],
             }
         },
     })

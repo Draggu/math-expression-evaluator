@@ -4,7 +4,7 @@ use super::function::Function;
 pub enum EvaluateResult {
     Val(f64),
     Fn {
-        kind: Function,
+        func: Function,
         args: Vec<EvaluateResult>,
     },
 }

@@ -86,7 +86,10 @@ impl Function {
                             "number",
                             "function",
                         )),
-                        EvaluateResult::Fn { ref args, kind } => {
+                        EvaluateResult::Fn {
+                            ref args,
+                            func: kind,
+                        } => {
                             let mut args = args.to_owned();
 
                             args.push(EvaluateResult::Val(*first));
