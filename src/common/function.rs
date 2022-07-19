@@ -25,6 +25,7 @@ impl Function {
             name, args_num, args_got
         )
     }
+
     #[inline]
     fn mismatched_type_message(name: &str, index: u8, received: &str, expected: &str) -> String {
         format!(

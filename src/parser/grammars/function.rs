@@ -77,7 +77,7 @@ pub fn function_call<'a>(tokens: &'a Vec<Token>, base_offset: usize) -> Option<N
         let mut args = Vec::<ASTNode<'a>>::new();
 
         let mut local_offset = offset + 1;
-        //TODO intersperse
+
         while let Some(expr) = expr(tokens, base_offset + local_offset)
             .filter(|expr| comma(tokens, expr.offset + base_offset + local_offset).is_some())
         {

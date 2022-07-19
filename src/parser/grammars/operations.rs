@@ -35,17 +35,17 @@ macro_rules! operation {
                     let  is_in_op = |op: &InfixOperator| false $(
                         || &$operator == op
                     )+;
-                    let mut is_ended_earlier = true;
+                    let mut is_match_missing = true;
 
                     let ast = if is_in_op(&op) {
                         let mut ingredients = vec![(op, value)];
 
                         ingredients.extend(occurences.take_while(|(op, ..)| {
-                            is_ended_earlier = is_in_op(op);
-                            is_ended_earlier
+                            is_match_missing = is_in_op(op);
+                            is_match_missing
                         }));
 
-                        if is_ended_earlier {
+                        if is_match_missing {
                             // in this case there should be no - last_offset later
                             // so add it to remove later
                             offset += last_offset;

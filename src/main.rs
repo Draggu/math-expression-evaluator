@@ -1,3 +1,4 @@
+use clap::Parser;
 use std::collections::HashMap;
 
 pub mod common;
@@ -5,17 +6,39 @@ mod evaluator;
 mod lexer;
 mod parser;
 
-pub fn calculate(input_str: &str) -> Result<f64, String> {
-    let tokens = lexer::tokenize(input_str)?;
+#[derive(Parser, Debug)]
+#[clap(author, version, about, long_about = None)]
+struct Args {
+    #[clap(value_parser)]
+    expr: String,
 
-    //TODO parsing erros
-    let ast = parser::parse(&tokens).ok_or("parsing error")?;
-
-    evaluator::evaluate(&ast, &HashMap::new())
+    /// variables in format name=value
+    #[clap(short, long, value_parser)]
+    var: Vec<String>,
 }
 
 fn main() -> Result<(), String> {
-    println!("{}", calculate("23* 2 *2|(+) 1--2)".as_ref())?);
+    let Args { expr, var } = Args::parse();
+
+    let vars = var
+        .iter()
+        .map(|v| {
+            let mut chars = v.chars();
+            let key: String = chars.by_ref().take_while(|c| c != &'=').collect();
+            let value: String = chars.collect();
+            let value: f64 = value.parse().map_err(|err| format!("{}", err))?;
+
+            Ok((key, value))
+        })
+        .collect::<Result<HashMap<String, f64>, String>>()?;
+
+    let tokens = lexer::tokenize(expr.as_str())?;
+
+    let ast = parser::parse(&tokens).ok_or("err")?;
+
+    let result = evaluator::evaluate(&ast, &vars)?;
+
+    println!("{}", result);
 
     Ok(())
 }

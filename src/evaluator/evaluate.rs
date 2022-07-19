@@ -8,18 +8,18 @@ use crate::common::{
 };
 use std::iter;
 
-pub fn evaluate(ast: &ASTNode, vars: &HashMap<&str, f64>) -> Result<f64, String> {
+pub fn evaluate(ast: &ASTNode, vars: &HashMap<String, f64>) -> Result<f64, String> {
     match _evaluate(ast, vars)? {
         EvaluateResult::Fn { .. } => Err("cannot return function".to_string()),
         EvaluateResult::Val(result) => Ok(result),
     }
 }
 
-fn _evaluate(ast: &ASTNode, vars: &HashMap<&str, f64>) -> Result<EvaluateResult, String> {
+fn _evaluate(ast: &ASTNode, vars: &HashMap<String, f64>) -> Result<EvaluateResult, String> {
     match ast {
         ASTNode::Literal(v) => Ok(EvaluateResult::Val(*v)),
         ASTNode::Var(var) => vars
-            .get(var)
+            .get(var.to_owned())
             .map(|v| EvaluateResult::Val(*v))
             .ok_or(format!("variable ( {} ) does not exists!", var)),
         ASTNode::Operation { ingredients, first } => {
